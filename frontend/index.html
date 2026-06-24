@@ -392,7 +392,7 @@
   <div id="output" style="display:none"></div>
 
   <script>
-    const API_URL = "http://localhost:3000/bfhl"; // ← change to your deployed URL
+    const API_URL = "http://localhost:3000/bfhl";
 
     const submitBtn = document.getElementById("submitBtn");
     const clearBtn = document.getElementById("clearBtn");
@@ -410,9 +410,6 @@
     submitBtn.addEventListener("click", async () => {
       const raw = textarea.value.trim();
       if (!raw) return;
-
-      // parse input — support newlines or commas as separators
-      // also strip surrounding quotes in case user pastes JSON-style array
       const data = raw
         .split(/[\n,]+/)
         .map(s => s.trim().replace(/^["']|["']$/g, ""))

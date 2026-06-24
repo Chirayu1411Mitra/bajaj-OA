@@ -1,3 +1,4 @@
+require("dotenv").config();
 const express = require("express");
 const cors = require("cors");
 
@@ -215,9 +216,9 @@ app.post("/bfhl", (req, res) => {
     const { hierarchies, invalidEntries, duplicateEdges, summary } = processData(data);
 
     return res.json({
-        user_id: "chirayumitra_14112005",
-        email_id: "chirayu1558.be23@chitkara.edu.in",
-        college_roll_number: "2310991558",
+        user_id: process.env.USER_ID,
+        email_id: process.env.EMAIL,
+        college_roll_number: process.env.ROLL_NUMBER,
         hierarchies,
         invalid_entries: invalidEntries,
         duplicate_edges: duplicateEdges,
