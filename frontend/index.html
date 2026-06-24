@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BFHL — Tree Analyzer</title>
+  <style>
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      --bg: #0f1117;
+      --surface: #1a1d27;
+      --border: #2a2d3a;
+      --accent: #6c63ff;
+      --accent-dim: rgba(108, 99, 255, 0.15);
+      --green: #3ecf8e;
+      --red: #f87171;
+      --yellow: #fbbf24;
+      --text: #e2e4ed;
+      --muted: #6b7280;
+      --radius: 10px;
+      --font: 'Inter', system-ui, sans-serif;
+      --mono: 'JetBrains Mono', 'Fira Code', monospace;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font);
+      min-height: 100vh;
+      padding: 40px 20px 80px;
+    }
+
+    header {
+      max-width: 780px;
+      margin: 0 auto 40px;
+    }
+
+    header h1 {
+      font-size: 1.6rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: #fff;
+    }
+
+    header p {
+      margin-top: 6px;
+      font-size: 0.9rem;
+      color: var(--muted);
+    }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px;
+      max-width: 780px;
+      margin: 0 auto 24px;
+    }
+
+    label {
+      display: block;
+      font-size: 0.8rem;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 10px;
+    }
+
+    textarea {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-family: var(--mono);
+      font-size: 0.88rem;
+      line-height: 1.7;
+      padding: 14px 16px;
+      resize: vertical;
+      min-height: 140px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    textarea:focus {
+      border-color: var(--accent);
+    }
+
+    textarea::placeholder {
+      color: var(--muted);
+    }
+
+    .hint {
+      margin-top: 8px;
+      font-size: 0.78rem;
+      color: var(--muted);
+    }
+
+    .actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 18px;
+    }
+
+    button {
+      padding: 10px 24px;
+      border-radius: 8px;
+      font-size: 0.88rem;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      transition: opacity 0.15s, transform 0.1s;
+    }
+
+    button:active {
+      transform: scale(0.98);
+    }
+
+    #submitBtn {
+      background: var(--accent);
+      color: #fff;
+    }
+
+    #submitBtn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    #clearBtn {
+      background: transparent;
+      color: var(--muted);
+      border: 1px solid var(--border);
+    }
+
+    #clearBtn:hover {
+      color: var(--text);
+      border-color: var(--text);
+    }
+
+    .error-box {
+      background: rgba(248, 113, 113, 0.1);
+      border: 1px solid rgba(248, 113, 113, 0.35);
+      border-radius: 8px;
+      padding: 14px 18px;
+      color: var(--red);
+      font-size: 0.88rem;
+      max-width: 780px;
+      margin: 0 auto 24px;
+    }
+
+    /* ── output section ── */
+
+    #output {
+      max-width: 780px;
+      margin: 0 auto;
+    }
+
+    .section-title {
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 14px;
+    }
+
+    /* identity row */
+    .identity-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+    }
+
+    @media (max-width: 560px) {
+      .identity-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .id-field {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px 16px;
+    }
+
+    .id-field .key {
+      font-size: 0.72rem;
+      color: var(--muted);
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      margin-bottom: 4px;
+    }
+
+    .id-field .val {
+      font-family: var(--mono);
+      font-size: 0.84rem;
+      color: var(--text);
+      word-break: break-all;
+    }
+
+    /* summary */
+    .summary-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+    }
+
+    @media (max-width: 560px) {
+      .summary-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .stat-box {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px;
+      text-align: center;
+    }
+
+    .stat-box .num {
+      font-size: 2rem;
+      font-weight: 800;
+      color: var(--accent);
+      line-height: 1;
+    }
+
+    .stat-box .lbl {
+      margin-top: 6px;
+      font-size: 0.75rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+    }
+
+    /* hierarchies */
+    .hierarchy-list {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+    }
+
+    .h-card {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+
+    .h-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .h-root {
+      font-family: var(--mono);
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: #fff;
+    }
+
+    .badge {
+      font-size: 0.7rem;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 99px;
+      letter-spacing: 0.04em;
+    }
+
+    .badge-tree {
+      background: rgba(62, 207, 142, 0.15);
+      color: var(--green);
+    }
+
+    .badge-cycle {
+      background: rgba(248, 113, 113, 0.15);
+      color: var(--red);
+    }
+
+    .h-depth {
+      margin-left: auto;
+      font-size: 0.78rem;
+      color: var(--muted);
+    }
+
+    .h-body {
+      padding: 14px 16px;
+    }
+
+    /* tree visual */
+    .tree-visual {
+      font-family: var(--mono);
+      font-size: 0.82rem;
+      color: var(--text);
+      line-height: 1.8;
+      white-space: pre;
+    }
+
+    .cycle-msg {
+      color: var(--red);
+      font-size: 0.85rem;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* tags for invalid / duplicate */
+    .tag-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .tag {
+      font-family: var(--mono);
+      font-size: 0.8rem;
+      padding: 4px 10px;
+      border-radius: 6px;
+    }
+
+    .tag-invalid {
+      background: rgba(248, 113, 113, 0.12);
+      color: var(--red);
+      border: 1px solid rgba(248, 113, 113, 0.25);
+    }
+
+    .tag-dup {
+      background: rgba(251, 191, 36, 0.1);
+      color: var(--yellow);
+      border: 1px solid rgba(251, 191, 36, 0.25);
+    }
+
+    .tag-empty {
+      color: var(--muted);
+      font-size: 0.83rem;
+    }
+
+    .spinner {
+      width: 16px;
+      height: 16px;
+      border: 2px solid rgba(255, 255, 255, 0.2);
+      border-top-color: #fff;
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+      display: inline-block;
+      vertical-align: middle;
+      margin-right: 8px;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <header>
+    <h1>BFHL Tree Analyzer</h1>
+    <p>Enter node edges to parse tree hierarchies and detect cycles.</p>
+  </header>
+
+  <div class="card">
+    <label for="nodeInput">Node list</label>
+    <textarea id="nodeInput"
+      placeholder='Enter one edge per line, or comma-separated&#10;e.g. A->B, A->C, B->D'></textarea>
+    <div class="hint">Each edge: single uppercase letter → single uppercase letter (e.g. A->B)</div>
+    <div class="actions">
+      <button id="submitBtn">Analyze</button>
+      <button id="clearBtn">Clear</button>
+    </div>
+  </div>
+
+  <div id="errorBox" class="error-box" style="display:none"></div>
+  <div id="output" style="display:none"></div>
+
+  <script>
+    const API_URL = "http://localhost:3000/bfhl"; // ← change to your deployed URL
+
+    const submitBtn = document.getElementById("submitBtn");
+    const clearBtn = document.getElementById("clearBtn");
+    const textarea = document.getElementById("nodeInput");
+    const errorBox = document.getElementById("errorBox");
+    const output = document.getElementById("output");
+
+    clearBtn.addEventListener("click", () => {
+      textarea.value = "";
+      errorBox.style.display = "none";
+      output.style.display = "none";
+      output.innerHTML = "";
+    });
+
+    submitBtn.addEventListener("click", async () => {
+      const raw = textarea.value.trim();
+      if (!raw) return;
+
+      // parse input — support newlines or commas as separators
+      // also strip surrounding quotes in case user pastes JSON-style array
+      const data = raw
+        .split(/[\n,]+/)
+        .map(s => s.trim().replace(/^["']|["']$/g, ""))
+        .filter(s => s.length > 0);
+
+      errorBox.style.display = "none";
+      output.style.display = "none";
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = '<span class="spinner"></span>Analyzing...';
+
+      try {
+        const res = await fetch(API_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ data }),
+        });
+
+        if (!res.ok) {
+          throw new Error(`Server returned ${res.status}`);
+        }
+
+        const json = await res.json();
+        renderOutput(json);
+        output.style.display = "block";
+      } catch (err) {
+        errorBox.textContent = `Request failed: ${err.message}. Make sure the API is running and CORS is enabled.`;
+        errorBox.style.display = "block";
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = "Analyze";
+      }
+    });
+
+    function renderOutput(d) {
+      output.innerHTML = `
+      ${identitySection(d)}
+      ${summarySection(d.summary)}
+      ${hierarchiesSection(d.hierarchies)}
+      ${tagsSection("Invalid Entries", d.invalid_entries, "tag-invalid")}
+      ${tagsSection("Duplicate Edges", d.duplicate_edges, "tag-dup")}
+    `;
+    }
+
+    function identitySection(d) {
+      return `
+      <div class="card">
+        <div class="section-title">Identity</div>
+        <div class="identity-grid">
+          <div class="id-field"><div class="key">User ID</div><div class="val">${esc(d.user_id)}</div></div>
+          <div class="id-field"><div class="key">Email</div><div class="val">${esc(d.email_id)}</div></div>
+          <div class="id-field"><div class="key">Roll Number</div><div class="val">${esc(d.college_roll_number)}</div></div>
+        </div>
+      </div>`;
+    }
+
+    function summarySection(s) {
+      return `
+      <div class="card">
+        <div class="section-title">Summary</div>
+        <div class="summary-grid">
+          <div class="stat-box">
+            <div class="num">${s.total_trees}</div>
+            <div class="lbl">Trees</div>
+          </div>
+          <div class="stat-box">
+            <div class="num">${s.total_cycles}</div>
+            <div class="lbl">Cycles</div>
+          </div>
+          <div class="stat-box">
+            <div class="num">${esc(s.largest_tree_root) || '—'}</div>
+            <div class="lbl">Largest Tree Root</div>
+          </div>
+        </div>
+      </div>`;
+    }
+
+    function hierarchiesSection(hierarchies) {
+      if (!hierarchies || hierarchies.length === 0) return "";
+      const items = hierarchies.map(h => {
+        const isCycle = h.has_cycle === true;
+        return `
+        <div class="h-card">
+          <div class="h-header">
+            <div class="h-root">${esc(h.root)}</div>
+            <span class="badge ${isCycle ? 'badge-cycle' : 'badge-tree'}">${isCycle ? 'CYCLE' : 'TREE'}</span>
+            ${!isCycle ? `<div class="h-depth">depth ${h.depth}</div>` : ''}
+          </div>
+          <div class="h-body">
+            ${isCycle
+            ? `<div class="cycle-msg">⚠ Cycle detected — no tree structure available.</div>`
+            : `<div class="tree-visual">${renderTree(h.tree, h.root)}</div>`
+          }
+          </div>
+        </div>`;
+      }).join("");
+
+      return `
+      <div class="card">
+        <div class="section-title">Hierarchies (${hierarchies.length})</div>
+        <div class="hierarchy-list">${items}</div>
+      </div>`;
+    }
+
+    // render nested tree object as ASCII lines
+    function renderTree(treeObj, root) {
+      // treeObj is like { "A": { "B": { "D": {} }, "C": {} } }
+      const lines = [];
+
+      function walk(node, children, prefix, isLast) {
+        const connector = isLast ? "└── " : "├── ";
+        lines.push(prefix + connector + node);
+        const childKeys = Object.keys(children);
+        childKeys.forEach((child, i) => {
+          const childIsLast = i === childKeys.length - 1;
+          const newPrefix = prefix + (isLast ? "    " : "│   ");
+          walk(child, children[child], newPrefix, childIsLast);
+        });
+      }
+
+      if (!treeObj || Object.keys(treeObj).length === 0) return "(empty)";
+
+      // root level
+      const rootChildren = treeObj[root] || {};
+      lines.push(root);
+      const childKeys = Object.keys(rootChildren);
+      childKeys.forEach((child, i) => {
+        const isLast = i === childKeys.length - 1;
+        walk(child, rootChildren[child], "", isLast);
+      });
+
+      return esc(lines.join("\n"));
+    }
+
+    function tagsSection(title, items, tagClass) {
+      if (!items) return "";
+      return `
+      <div class="card">
+        <div class="section-title">${title}</div>
+        <div class="tag-list">
+          ${items.length === 0
+          ? `<span class="tag-empty">None</span>`
+          : items.map(e => `<span class="tag ${tagClass}">${esc(e)}</span>`).join("")
+        }
+        </div>
+      </div>`;
+    }
+
+    function esc(str) {
+      if (str == null) return "";
+      return String(str)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+    }
+  </script>
+
+</body>
+
+</html>
